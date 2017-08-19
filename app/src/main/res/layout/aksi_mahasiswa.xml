@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <EditText
+        android:id="@+id/txtaksinama"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Nama"
+        android:inputType="textPersonName" />
+
+    <EditText
+        android:id="@+id/txtaksijurusan"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txtaksinama"
+        android:hint="Jurusan"
+        android:inputType="textPersonName" />
+
+    <Button
+        android:id="@+id/btnaksisimpan"
+        android:text="Edit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/txtaksijurusan"/>
+
+    <Button
+        android:id="@+id/btnaksihapus"
+        android:text="Hapus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/btnaksisimpan"/>
+</RelativeLayout>
