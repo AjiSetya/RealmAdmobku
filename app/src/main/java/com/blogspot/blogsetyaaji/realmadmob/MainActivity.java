@@ -4,7 +4,6 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -20,7 +19,10 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import java.util.List;
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+import com.google.android.gms.ads.InterstitialAd;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -39,6 +41,9 @@ public class MainActivity extends AppCompatActivity {
     RealmConfiguration realmConfiguration;
     RealmAsyncTask realmAsyncTask;
     RealmResults<ModelMahasiswa> data_mhs;
+    @BindView(R.id.adView)
+    AdView adView;
+    InterstitialAd mInterstitialAd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +53,47 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        AdRequest adRequest = new AdRequest.Builder().build();
+        adView.loadAd(adRequest);
+
+        mInterstitialAd = new InterstitialAd(this);
+        mInterstitialAd.setAdUnitId("ca-app-pub-6309516150695970/4012985914");
+        mInterstitialAd.loadAd(new AdRequest.Builder().build());
+
+        mInterstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdLoaded() {
+                // Code to be executed when an ad finishes loading.
+                Log.i("Ads", "onAdLoaded");
+            }
+
+            @Override
+            public void onAdFailedToLoad(int errorCode) {
+                // Code to be executed when an ad request fails.
+                Log.i("Ads", "onAdFailedToLoad");
+            }
+
+            @Override
+            public void onAdOpened() {
+                // Code to be executed when the ad is displayed.
+                Log.i("Ads", "onAdOpened");
+            }
+
+            @Override
+            public void onAdLeftApplication() {
+                // Code to be executed when the user has left the app.
+                Log.i("Ads", "onAdLeftApplication");
+            }
+
+            @Override
+            public void onAdClosed() {
+                // Code to be executed when when the interstitial ad is closed.
+                startActivity(new Intent(MainActivity.this, TambahActivity.class));
+                // Load the next interstitial.
+                mInterstitialAd.loadAd(new AdRequest.Builder().build());
+                Log.i("Ads", "onAdClosed");
+            }
+        });
         // memasukkan komponen realm, membentuk layanan realm
         inisialisasiRealm(this);
 
@@ -55,7 +101,11 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                startActivity(new Intent(MainActivity.this, TambahActivity.class));
+                if (mInterstitialAd.isLoaded()) {
+                    mInterstitialAd.show();
+                } else {
+                    Log.d("TAG", "The interstitial wasn't loaded yet.");
+                }
             }
         });
 
@@ -110,7 +160,35 @@ public class MainActivity extends AppCompatActivity {
                                 txtjurusan.setError("Jurusan tidak boleh kosong");
                                 txtjurusan.requestFocus();
                             } else {
-                                Toast.makeText(MainActivity.this, "Edit", Toast.LENGTH_SHORT).show();
+                                // simpan data
+                                ModelMahasiswa model = realm.where(ModelMahasiswa.class)
+                                        .equalTo("idmahasiswa", data_mhs.get(posisi).getIdmahasiswa())
+                                        .findFirst();
+                                if (model != null) {
+                                    realmAsyncTask = realm.executeTransactionAsync(new Realm.Transaction() {
+                                        @Override
+                                        public void execute(Realm realm) {
+                                            ModelMahasiswa model = realm.createObject(ModelMahasiswa.class);
+                                            model.setNamamahasiswa(nama);
+                                            model.setJurusanmahasiswa(jurusan);
+                                            dialog.dismiss();
+                                            tampilData();
+                                        }
+                                    }, new Realm.Transaction.OnSuccess() {
+                                        @Override
+                                        public void onSuccess() {
+                                            Toast.makeText(MainActivity.this, "Data disimpan", Toast.LENGTH_SHORT).show();
+                                        }
+                                    }, new Realm.Transaction.OnError() {
+                                        @Override
+                                        public void onError(Throwable error) {
+                                            Toast.makeText(MainActivity.this, "Gagal menyimpan data", Toast.LENGTH_SHORT).show();
+                                            Log.e("error simpan : ", error.getMessage());
+                                        }
+                                    });
+                                } else {
+                                    Toast.makeText(MainActivity.this, "data tidak ditemukan", Toast.LENGTH_SHORT).show();
+                                }
                             }
                         }
                     });
