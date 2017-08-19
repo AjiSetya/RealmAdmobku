@@ -42,7 +42,9 @@ class MahasiswaAdapter extends RecyclerView.Adapter<MahasiswaAdapter.ViewHolder>
 
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-
+        // pasang data ke koponen pada item mahasiswa
+        holder.txtlistnama.setText(data.get(position).getNamamahasiswa());
+        holder.txtlistjurusan.setText(data.get(position).getJurusanmahasiswa());
     }
 
     @Override

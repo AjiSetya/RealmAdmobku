@@ -1,5 +1,6 @@
 package com.blogspot.blogsetyaaji.realmadmob;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -8,10 +9,15 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.Toast;
 
 import java.util.List;
@@ -32,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     Realm realm;
     RealmConfiguration realmConfiguration;
     RealmAsyncTask realmAsyncTask;
+    RealmResults<ModelMahasiswa> data_mhs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,11 +66,91 @@ public class MainActivity extends AppCompatActivity {
 
         // tampilkan data
         tampilData();
+
+        // perintah ketika perintah diklik
+        lvmahasiswa.addOnItemTouchListener(new RecyclerView.OnItemTouchListener() {
+            GestureDetector gesture = new GestureDetector(getApplicationContext()
+                    , new GestureDetector.SimpleOnGestureListener() {
+                @Override
+                public boolean onSingleTapUp(MotionEvent e) {
+                    return true;
+                }
+            });
+
+            @Override
+            public boolean onInterceptTouchEvent(RecyclerView rv, MotionEvent e) {
+                View child = rv.findChildViewUnder(e.getX(), e.getY());
+                // cek apakah posisi dan gesture ada
+                if (child != null && gesture.onTouchEvent(e)) {
+                    final int posisi = rv.getChildAdapterPosition(child);
+                    // dialog menampilkan aksi untuk data yang dipilih
+                    final ModelMahasiswa model = data_mhs.get(posisi);
+                    final Dialog dialog = new Dialog(MainActivity.this);
+                    //tampilkan layout aksi ke dalam dialog
+                    dialog.setContentView(R.layout.aksi_mahasiswa);
+                    // deklarasi dan inisialisasi komponen pada layout
+                    final EditText txtnama = (EditText) dialog.findViewById(R.id.txtaksinama);
+                    final EditText txtjurusan = (EditText) dialog.findViewById(R.id.txtaksijurusan);
+                    txtnama.setText(model.getNamamahasiswa());
+                    txtjurusan.setText(model.getJurusanmahasiswa());
+                    Button btnedit = (Button) dialog.findViewById(R.id.btnaksisimpan);
+                    Button btnhapus = (Button) dialog.findViewById(R.id.btnaksihapus);
+                    // aksi pada tombol
+                    btnedit.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // perbarui data
+                            Toast.makeText(MainActivity.this, model.getIdmahasiswa(), Toast.LENGTH_SHORT).show();
+                            final String nama = txtnama.getText().toString();
+                            final String jurusan = txtjurusan.getText().toString();
+                            if (TextUtils.isEmpty(nama)) {
+                                txtnama.setError("Nama tidak boleh kosong");
+                                txtnama.requestFocus();
+                            } else if (TextUtils.isEmpty(jurusan)) {
+                                txtjurusan.setError("Jurusan tidak boleh kosong");
+                                txtjurusan.requestFocus();
+                            } else {
+                                Toast.makeText(MainActivity.this, "Edit", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+                    });
+                    btnhapus.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            Toast.makeText(MainActivity.this, model.getIdmahasiswa(), Toast.LENGTH_SHORT).show();
+                            realm.executeTransaction(new Realm.Transaction() {
+                                @Override
+                                public void execute(Realm realm) {
+                                    ModelMahasiswa mhs = data_mhs.get(posisi);
+                                    mhs.deleteFromRealm();
+                                    Toast.makeText(MainActivity.this, "data terhapus", Toast.LENGTH_SHORT).show();
+                                    dialog.dismiss();
+                                    tampilData();
+                                }
+                            });
+                        }
+                    });
+                    dialog.show();
+                }
+                return false;
+            }
+
+            @Override
+            public void onTouchEvent(RecyclerView rv, MotionEvent e) {
+
+            }
+
+            @Override
+            public void onRequestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+
+            }
+        });
+
     }
 
     private void tampilData() {
         // panggil semua data yang disimpan di dalam model mahasiswa
-        RealmResults<ModelMahasiswa> data_mhs =
+        data_mhs =
                 realm.where(ModelMahasiswa.class).findAll();
         // check keberadaan data
         if (data_mhs.size() <= 0) {
